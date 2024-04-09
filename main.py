@@ -57,26 +57,27 @@ def process_images(main_image_path, dir_path, feature_file, repet, scale):
 
     # Busca pela imagem da base que combine melhor com a seção
     tile_section_concat = []
+    added_tiles = set()  # Conjunto para rastrear tiles já adicionadas
+
     for color_section, (x, y) in section_colors:
         best_match_tile = None
         best_match_diff = float('inf')
 
-        for tile_index, (tile, cor_media) in enumerate(tiles_colors):
-            # Calculando a diferença de cor
-            diff = abs(color_section[0] - cor_media[0]) + \
-                abs(color_section[1] - cor_media[1]) + \
-                abs(color_section[2] - cor_media[2])
+        for (tile, cor_media) in tiles_colors:
+            # Calculando a diferença de cor (usando distância Euclidiana)
+            diff = ((color_section[0] - cor_media[0])**2 +
+                    (color_section[1] - cor_media[1])**2 +
+                    (color_section[2] - cor_media[2])**2) ** 0.5
 
-            if diff < best_match_diff:
+            if diff < best_match_diff and (repet == 1 or tile not in added_tiles):
                 best_match_diff = diff
                 best_match_tile = tile
-                best_match_index = tile_index
 
-        tile_section_concat.append((best_match_tile, (x, y)))
+        if best_match_tile is not None:
+            tile_section_concat.append((best_match_tile, (x, y)))
+            if repet == 0:
+                added_tiles.add(best_match_tile)
 
-        if repet == 0:
-            # Removendo a melhor correspondência da lista pelo índice
-            del tiles_colors[best_match_index]
     
     # Abre imagem como outro tipo de obj e cria quadro em branco
     main_image = Image.open(main_image_path)
@@ -102,8 +103,8 @@ def main():
     main_image_path = sys.argv[1]
     dir_path = sys.argv[2]
     feature_file = sys.argv[3]
-    repet = sys.argv[4]
-    scale = sys.argv[5]
+    repet = int(sys.argv[4])
+    scale = int(sys.argv[5])
 
     # Processar as imagens
     process_images(main_image_path, dir_path, feature_file, repet, scale)
